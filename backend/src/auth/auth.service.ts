@@ -27,6 +27,12 @@ export class AuthService implements OnModuleInit {
 
   async seedSuperAdmin() {
     try {
+      // Si ya existe CUALQUIER usuario administrador en la base de datos, no recrear nada
+      const anyAdmin = await this.userModel.findOne({ role: UserRole.ADMIN });
+      if (anyAdmin) {
+        this.logger.log('Administrador existente detectado en DB. Omitiendo seed.');
+        return;
+      }
       const existingSuperAdmin = await this.userModel.findOne({ email: 'task@prueba.com' });
       if (!existingSuperAdmin) {
         const hashedPassword = await bcrypt.hash('741963', 10);

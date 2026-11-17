@@ -43,10 +43,11 @@ export const WhatsappView: React.FC = () => {
   useEffect(() => {
     fetchStatus();
 
-    // Conexión WebSocket para actualizaciones en tiempo real
+    // Conexión Socket con fallback a polling
     const socket: Socket = io(window.location.origin, {
       path: '/socket.io',
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 5,
     });
 
     socket.on('whatsapp:status', (newStatus: WhatsAppStatus) => {
@@ -57,10 +58,10 @@ export const WhatsappView: React.FC = () => {
       setStatus((prev) => ({ ...prev, pairingCode: data.pairingCode, isConnecting: false }));
     });
 
-    // Polling de respaldo cada 5 segundos si está conectando
+    // Polling de respaldo cada 3 segundos si está en proceso de conexión
     const interval = setInterval(() => {
       fetchStatus();
-    }, 5000);
+    }, 3000);
 
     return () => {
       socket.disconnect();
@@ -238,32 +239,49 @@ export const WhatsappView: React.FC = () => {
               </div>
             </form>
 
-            {/* Visualización del Código de 8 Dígitos en Pantalla Grande */}
-            {status.pairingCode && (
-              <div className="mt-8 p-6 sm:p-8 rounded-2xl bg-gradient-to-b from-slate-950 to-slate-900 border-2 border-emerald-500/40 shadow-2xl text-center animate-fade-in">
-                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 block mb-2">
-                  Código de Emparejamiento Generado
-                </span>
-                <p className="text-xs text-slate-400 mb-6 max-w-md mx-auto">
-                  Abra WhatsApp en su teléfono &gt; Dispositivos vinculados &gt; Vincular un dispositivo &gt;{' '}
-                  <span className="text-slate-200 font-semibold">Vincular con el número de teléfono</span> e ingrese este código:
-                </p>
+            {/* Visualización del Código de 8 Dígitos y Código QR */}
+            {(status.pairingCode || status.qrCode) && (
+              <div className="mt-8 p-6 sm:p-8 rounded-2xl bg-gradient-to-b from-slate-950 to-slate-900 border-2 border-emerald-500/40 shadow-2xl text-center animate-fade-in space-y-6">
+                {status.pairingCode && (
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 block mb-2">
+                      Opción 1: Código de Emparejamiento (Pairing Code)
+                    </span>
+                    <p className="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+                      Abra WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo &gt;{' '}
+                      <span className="text-slate-200 font-semibold">Vincular con el número de teléfono</span>:
+                    </p>
 
-                {/* Código Gigante */}
-                <div className="inline-flex items-center justify-center gap-4 bg-slate-950 px-8 py-5 rounded-2xl border border-emerald-500/50 shadow-inner mb-6">
-                  <span className="text-3xl sm:text-5xl font-black font-mono tracking-widest text-emerald-400 select-all">
-                    {status.pairingCode}
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(status.pairingCode || '')}
-                    className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-emerald-400 transition-colors border border-slate-800"
-                    title="Copiar código"
-                  >
-                    {copied ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Copy className="w-6 h-6" />}
-                  </button>
-                </div>
+                    <div className="inline-flex items-center justify-center gap-4 bg-slate-950 px-8 py-5 rounded-2xl border border-emerald-500/50 shadow-inner mb-4">
+                      <span className="text-3xl sm:text-5xl font-black font-mono tracking-widest text-emerald-400 select-all">
+                        {status.pairingCode}
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(status.pairingCode || '')}
+                        className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-emerald-400 transition-colors border border-slate-800"
+                        title="Copiar código"
+                      >
+                        {copied ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Copy className="w-6 h-6" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+                {status.qrCode && (
+                  <div className="pt-4 border-t border-slate-800/80 flex flex-col items-center">
+                    <span className="text-xs font-bold uppercase tracking-widest text-cyan-400 block mb-2">
+                      Opción 2: Escaneo de Código QR
+                    </span>
+                    <p className="text-xs text-slate-400 mb-3">
+                      O si lo prefiere, apunte la cámara de WhatsApp al siguiente código:
+                    </p>
+                    <div className="p-3 bg-white rounded-2xl shadow-xl inline-block">
+                      <img src={status.qrCode} alt="WhatsApp QR Code" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5 pt-2">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                   <span>Esperando confirmación en su teléfono móvil...</span>
                 </div>

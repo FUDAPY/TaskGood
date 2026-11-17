@@ -59,6 +59,7 @@ export interface WhatsAppStatus {
   isConnected: boolean;
   isConnecting: boolean;
   pairingCode: string | null;
+  qrCode?: string | null;
   phoneNumber: string | null;
   lastError: string | null;
 }
