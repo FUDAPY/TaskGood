@@ -1,0 +1,16 @@
+{
+  "name": "taskgood-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TaskGood - Sistema Avanzado de Gestión de Tareas PWA",
+  "scripts": {
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start": "cd backend && npm run start:prod",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "author": "Giuliano Catella / ZETTI DIGITAL PY",
+  "license": "MIT"
+}
