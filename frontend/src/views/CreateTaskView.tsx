@@ -27,11 +27,11 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
       .then((data) => {
         setFuncionarios(data);
         if (data.length > 0) {
-          setAssignedTo(data[0].id);
+          setAssignedTo(data[0]._id || data[0].id || '');
         }
       })
       .catch((err) => {
-        setErrorMsg('Error al cargar la lista de funcionarios');
+        setErrorMsg('Error al cargar la lista de usuarios para asignación');
       });
   }, []);
 
@@ -124,7 +124,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Funcionario Asignado *</span>
+              <span>Usuario Asignado (Funcionario o Administrador) *</span>
             </label>
             <select
               required
@@ -132,15 +132,18 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
               onChange={(e) => setAssignedTo(e.target.value)}
               className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
             >
-              {funcionarios.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name} ({f.phone ? `WhatsApp: ${f.phone}` : f.email})
-                </option>
-              ))}
+              {funcionarios.map((f) => {
+                const uid = f._id || f.id || '';
+                return (
+                  <option key={uid} value={uid}>
+                    {f.name} [{f.role.toUpperCase()}] {f.phone ? `(WhatsApp: ${f.phone})` : `(${f.email})`}
+                  </option>
+                );
+              })}
             </select>
             {funcionarios.length === 0 && (
               <span className="text-[11px] text-amber-400 mt-1 block">
-                No hay funcionarios registrados todavía. Debe crear uno en la pestaña Usuarios.
+                No hay usuarios registrados todavía.
               </span>
             )}
           </div>

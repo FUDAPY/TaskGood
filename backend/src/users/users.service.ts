@@ -21,7 +21,15 @@ export class UsersService {
 
   async findFuncionarios(): Promise<User[]> {
     return this.userModel
-      .find({ role: UserRole.FUNCIONARIO })
+      .find()
+      .select('-password')
+      .sort({ name: 1 })
+      .exec();
+  }
+
+  async findAssignableUsers(): Promise<User[]> {
+    return this.userModel
+      .find()
       .select('-password')
       .sort({ name: 1 })
       .exec();

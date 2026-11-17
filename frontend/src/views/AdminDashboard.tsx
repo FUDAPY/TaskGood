@@ -308,12 +308,15 @@ export const AdminDashboard: React.FC = () => {
           onChange={(e) => setSelectedFuncionario(e.target.value)}
           className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-300 text-xs focus:outline-none focus:border-emerald-500"
         >
-          <option value="">Todos los Funcionarios</option>
-          {funcionarios.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
+          <option value="">Todos los Usuarios (Admin / Funcionario)</option>
+          {funcionarios.map((f) => {
+            const uid = f._id || f.id || '';
+            return (
+              <option key={uid} value={uid}>
+                {f.name} ({f.role.toUpperCase()})
+              </option>
+            );
+          })}
         </select>
 
         {(startDate || endDate || selectedStatus || selectedFuncionario) && (

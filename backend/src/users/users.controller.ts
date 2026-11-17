@@ -50,6 +50,20 @@ export class UsersController {
     return this.usersService.create(body);
   }
 
+  @Put('profile/me')
+  async updateMyProfile(
+    @Request() req: any,
+    @Body()
+    body: {
+      name?: string;
+      email?: string;
+      password?: string;
+      phone?: string;
+    },
+  ) {
+    return this.usersService.update(req.user._id.toString(), body);
+  }
+
   @Put(':id')
   @Roles(UserRole.ADMIN)
   async updateUser(

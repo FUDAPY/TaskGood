@@ -50,6 +50,8 @@ const MainLayout: React.FC = () => {
         return <AdminDashboard />;
       case 'create-task':
         return <CreateTaskView onTaskCreated={() => setActiveTab('dashboard')} />;
+      case 'my-tasks':
+        return <FuncionarioPipeline />;
       case 'users':
         return <UsersView />;
       case 'whatsapp':
@@ -59,11 +61,17 @@ const MainLayout: React.FC = () => {
     }
   };
 
+  if (isFirstLoginRequired) {
+    return (
+      <div className="flex-1 flex flex-col min-h-screen bg-slate-950">
+        <FirstLoginModal />
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-950">
-      {/* Forzar actualización en primer inicio de sesión */}
-      {isFirstLoginRequired && <FirstLoginModal />}
-
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 pb-12">{renderContent()}</main>
       <Footer />

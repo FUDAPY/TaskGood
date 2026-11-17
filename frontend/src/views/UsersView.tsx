@@ -74,7 +74,8 @@ export const UsersView: React.FC = () => {
 
     try {
       if (editingUser) {
-        await apiFetch(`/users/${editingUser.id}`, {
+        const targetId = editingUser._id || editingUser.id;
+        await apiFetch(`/users/${targetId}`, {
           method: 'PUT',
           body: JSON.stringify({
             name: formName,
@@ -110,7 +111,8 @@ export const UsersView: React.FC = () => {
     if (!confirm(`¿Estás seguro de eliminar al usuario ${u.name}?`)) return;
 
     try {
-      await apiFetch(`/users/${u.id}`, { method: 'DELETE' });
+      const targetId = u._id || u.id;
+      await apiFetch(`/users/${targetId}`, { method: 'DELETE' });
       setSuccessMsg('Usuario eliminado correctamente.');
       fetchUsers();
     } catch (err: any) {
@@ -166,8 +168,10 @@ export const UsersView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-800/30 transition-colors">
+              {users.map((u) => {
+                const uid = u._id || u.id || '';
+                return (
+                  <tr key={uid} className="hover:bg-slate-800/30 transition-colors">
                   <td className="py-3.5 px-4 font-bold text-slate-200">{u.name}</td>
                   <td className="py-3.5 px-4 text-slate-400">{u.email}</td>
                   <td className="py-3.5 px-4 text-slate-300 font-mono">
@@ -205,7 +209,8 @@ export const UsersView: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>
