@@ -213,19 +213,20 @@ export class TasksService {
     const finalizadas = allTasks.filter((t) => t.status === TaskStatus.FINALIZADO).length;
     const rechazadas = allTasks.filter((t) => t.status === TaskStatus.RECHAZADO).length;
 
-    // Ranking de carga laboral por funcionario
-    const funcionarios = await this.userModel.find({ role: UserRole.FUNCIONARIO }).exec();
-    const ranking = funcionarios.map((f) => {
-      const fTasks = allTasks.filter((t) => t.assignedTo.toString() === f._id.toString());
+    // Ranking de carga laboral (incluye Funcionarios y Administradores)
+    const allUsers = await this.userModel.find().exec();
+    const ranking = allUsers.map((u) => {
+      const uTasks = allTasks.filter((t) => t.assignedTo.toString() === u._id.toString());
       return {
-        id: f._id.toString(),
-        name: f.name,
-        email: f.email,
-        totalTasks: fTasks.length,
-        pendientes: fTasks.filter((t) => t.status === TaskStatus.PENDIENTE).length,
-        enProceso: fTasks.filter((t) => t.status === TaskStatus.EN_PROCESO).length,
-        finalizadas: fTasks.filter((t) => t.status === TaskStatus.FINALIZADO).length,
-        rechazadas: fTasks.filter((t) => t.status === TaskStatus.RECHAZADO).length,
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        totalTasks: uTasks.length,
+        pendientes: uTasks.filter((t) => t.status === TaskStatus.PENDIENTE).length,
+        enProceso: uTasks.filter((t) => t.status === TaskStatus.EN_PROCESO).length,
+        finalizadas: uTasks.filter((t) => t.status === TaskStatus.FINALIZADO).length,
+        rechazadas: uTasks.filter((t) => t.status === TaskStatus.RECHAZADO).length,
       };
     });
 

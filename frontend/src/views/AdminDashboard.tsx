@@ -29,6 +29,7 @@ interface StatsData {
     id: string;
     name: string;
     email: string;
+    role?: string;
     totalTasks: number;
     pendientes: number;
     enProceso: number;
@@ -221,17 +222,17 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Ranking de Funcionarios (Carga Laboral) */}
+      {/* Ranking de Carga Laboral (Equipo Completo: Funcionarios y Administradores) */}
       {stats && stats.ranking.length > 0 && (
         <div className="mb-8 p-6 rounded-2xl bg-slate-900/70 border border-slate-800">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
               <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-                Ranking de Carga Laboral por Funcionario
+                Ranking de Carga Laboral (Equipo Completo)
               </h2>
             </div>
-            <span className="text-xs text-slate-400">Total funcionarios: {stats.ranking.length}</span>
+            <span className="text-xs text-slate-400">Total miembros: {stats.ranking.length}</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -245,9 +246,22 @@ export const AdminDashboard: React.FC = () => {
                     #{index + 1}
                   </span>
                   <div>
-                    <span className="text-xs font-bold text-slate-200 block">
-                      {func.name}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-200 block">
+                        {func.name}
+                      </span>
+                      {func.role && (
+                        <span
+                          className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
+                            func.role === 'admin'
+                              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          }`}
+                        >
+                          {func.role}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-slate-500">
                       {func.email}
                     </span>
