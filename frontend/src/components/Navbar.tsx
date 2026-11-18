@@ -11,6 +11,7 @@ import {
   Bell,
   BellRing,
   UserCheck,
+  Download,
 } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import { EditProfileModal } from './EditProfileModal';
@@ -25,6 +26,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const { user, logout } = useAuth();
   const [pushStatus, setPushStatus] = useState<'default' | 'granted' | 'denied'>('default');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isStandalone] = useState(() => {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
+  });
 
   const requestNotificationPermission = async () => {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
@@ -147,6 +154,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
 
           {/* Usuario y Acciones */}
           <div className="flex items-center gap-3">
+            {!isStandalone && (
+              <button
+                onClick={() => window.dispatchEvent(new Event('pwa-trigger-install'))}
+                title="Instalar TaskGood como aplicación en tu dispositivo"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Instalar App</span>
+              </button>
+            )}
+
             <button
               onClick={requestNotificationPermission}
               title="Permisos de Notificaciones"

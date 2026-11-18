@@ -22,7 +22,7 @@ export class WhatsappController {
   @Post('disconnect')
   @Roles(UserRole.ADMIN)
   async disconnect() {
-    await this.whatsappService.destroyClient();
+    await this.whatsappService.logout();
     return { success: true, message: 'Sesión de WhatsApp desconectada.' };
   }
 }
