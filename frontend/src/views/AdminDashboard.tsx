@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Task, TaskStatus, User } from '../types';
+import { Task, TaskStatus, TaskType, User } from '../types';
 import { apiFetch } from '../services/api';
 import {
   BarChart3,
@@ -15,7 +15,49 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
+
+const renderTaskTypeBadge = (type: TaskType | string) => {
+  switch (type) {
+    case TaskType.DIARIO:
+    case 'diario':
+      return (
+        <span className="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1">
+          <Repeat className="w-2.5 h-2.5" />
+          Diario
+        </span>
+      );
+    case TaskType.SEMANAL:
+    case 'semanal':
+    case TaskType.PERMANENTE:
+    case 'permanente':
+      return (
+        <span className="text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1">
+          <Repeat className="w-2.5 h-2.5" />
+          Semanal
+        </span>
+      );
+    case TaskType.QUINCENAL:
+    case 'quincenal':
+      return (
+        <span className="text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1">
+          <Repeat className="w-2.5 h-2.5" />
+          Quincenal
+        </span>
+      );
+    case TaskType.MENSUAL:
+    case 'mensual':
+      return (
+        <span className="text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1">
+          <Repeat className="w-2.5 h-2.5" />
+          Mensual
+        </span>
+      );
+    default:
+      return <span className="text-slate-400 text-[10px]">Común</span>;
+  }
+};
 
 interface StatsData {
   overview: {
@@ -82,6 +124,23 @@ export const AdminDashboard: React.FC = () => {
       console.error('Error cargando panel de administración:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (
+      !confirm(
+        '¿Confirma que desea eliminar esta tarea? Si es una tarea recurrente raíz, se cancelarán también sus ocurrencias futuras pendientes.',
+      )
+    ) {
+      return;
+    }
+    try {
+      await apiFetch(`/tasks/${taskId}`, { method: 'DELETE' });
+      setSelectedTask(null);
+      fetchData();
+    } catch (err: any) {
+      alert(err?.message || 'Error al eliminar la tarea');
     }
   };
 
@@ -417,7 +476,12 @@ export const AdminDashboard: React.FC = () => {
                             : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                         }`}
                       >
-                        {task.title}
+                        <span className="flex items-center justify-between gap-1">
+                          <span className="truncate">{task.title}</span>
+                          {task.type !== TaskType.COMUN && (
+                            <Repeat className="w-2.5 h-2.5 shrink-0 opacity-75" />
+                          )}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -438,7 +502,7 @@ export const AdminDashboard: React.FC = () => {
                   <th className="py-3 px-4">Funcionario</th>
                   <th className="py-3 px-4">Tipo</th>
                   <th className="py-3 px-4">Estado</th>
-                  <th className="py-3 px-4 text-right">Detalle</th>
+                  <th className="py-3 px-4 text-right">Detalles</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -451,16 +515,7 @@ export const AdminDashboard: React.FC = () => {
                     <td className="py-3 px-4 font-mono text-slate-300">{task.assignedDate}</td>
                     <td className="py-3 px-4 font-semibold text-slate-100">{task.title}</td>
                     <td className="py-3 px-4 text-slate-300">{task.assignedTo?.name || 'N/A'}</td>
-                    <td className="py-3 px-4">
-                      {task.type === 'permanente' ? (
-                        <span className="text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1">
-                          <Repeat className="w-2.5 h-2.5" />
-                          Semanal
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[10px]">Común</span>
-                      )}
-                    </td>
+                    <td className="py-3 px-4">{renderTaskTypeBadge(task.type)}</td>
                     <td className="py-3 px-4">
                       <span
                         className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
@@ -527,7 +582,17 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold mr-2">Tipo de Tarea:</span>
-                  <span className="text-slate-200 capitalize font-medium">{selectedTask.type}</span>
+                  <span className="text-slate-200 capitalize font-medium">
+                    {selectedTask.type === TaskType.DIARIO
+                      ? 'Diario (Se repite todos los días)'
+                      : selectedTask.type === TaskType.SEMANAL || selectedTask.type === TaskType.PERMANENTE
+                      ? 'Semanal (Mismo día cada semana)'
+                      : selectedTask.type === TaskType.QUINCENAL
+                      ? 'Quincenal (Cada 15 días)'
+                      : selectedTask.type === TaskType.MENSUAL
+                      ? 'Mensual (Mismo día cada mes)'
+                      : 'Común (Única vez)'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold mr-2">Estado Actual:</span>
@@ -546,7 +611,7 @@ export const AdminDashboard: React.FC = () => {
               {selectedTask.justification && (
                 <div>
                   <span className="text-emerald-400 font-bold block mb-1">
-                    Justificación Registrada del Funcionario:
+                     Justificación Registrada:
                   </span>
                   <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-200 italic leading-relaxed">
                     "{selectedTask.justification}"
@@ -573,7 +638,15 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-800 text-right">
+            <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+              <button
+                onClick={() => handleDeleteTask(selectedTask._id)}
+                className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                title="Eliminar tarea de la base de datos"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Eliminar Tarea</span>
+              </button>
               <button
                 onClick={() => setSelectedTask(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"

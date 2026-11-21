@@ -16,6 +16,10 @@ export interface User {
 export enum TaskType {
   COMUN = 'comun',
   PERMANENTE = 'permanente',
+  DIARIO = 'diario',
+  SEMANAL = 'semanal',
+  QUINCENAL = 'quincenal',
+  MENSUAL = 'mensual',
 }
 
 export enum TaskStatus {
@@ -51,6 +55,8 @@ export interface Task {
   status: TaskStatus;
   justification: string;
   history: TaskHistoryItem[];
+  recurringParentId?: string;
+  isRecurringRoot?: boolean;
   createdAt: string;
   updatedAt: string;
 }

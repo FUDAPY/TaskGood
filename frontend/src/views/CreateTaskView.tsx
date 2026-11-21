@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { User, TaskType } from '../types';
 import { apiFetch } from '../services/api';
-import { PlusCircle, CheckCircle2, AlertCircle, Calendar, Repeat, User as UserIcon } from 'lucide-react';
+import {
+  PlusCircle,
+  CheckCircle2,
+  AlertCircle,
+  Calendar,
+  Repeat,
+  User as UserIcon,
+  Clock,
+  CalendarDays,
+  Layers,
+  CalendarRange,
+} from 'lucide-react';
 
 interface CreateTaskViewProps {
   onTaskCreated?: () => void;
@@ -30,7 +41,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
           setAssignedTo(data[0]._id || data[0].id || '');
         }
       })
-      .catch((err) => {
+      .catch(() => {
         setErrorMsg('Error al cargar la lista de usuarios para asignación');
       });
   }, []);
@@ -64,6 +75,54 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
     }
   };
 
+  const taskTypeOptions = [
+    {
+      value: TaskType.COMUN,
+      label: 'Común',
+      subtitle: 'Única vez',
+      desc: 'Se ejecuta una sola vez en la fecha fijada.',
+      icon: Calendar,
+      color: 'emerald',
+      activeBorder: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+    },
+    {
+      value: TaskType.DIARIO,
+      label: 'Diario',
+      subtitle: 'Todos los días',
+      desc: 'Se repite todos los días a partir de la fecha fijada.',
+      icon: Clock,
+      color: 'amber',
+      activeBorder: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+    },
+    {
+      value: TaskType.SEMANAL,
+      label: 'Semanal',
+      subtitle: 'Mismo día cada semana',
+      desc: 'Se repite el mismo día todas las semanas (cada 7 días).',
+      icon: CalendarDays,
+      color: 'cyan',
+      activeBorder: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
+    },
+    {
+      value: TaskType.QUINCENAL,
+      label: 'Quincenal',
+      subtitle: 'Cada 15 días',
+      desc: 'Se repite cada 15 días a partir de la fecha fijada.',
+      icon: Layers,
+      color: 'purple',
+      activeBorder: 'border-purple-500/40 bg-purple-500/10 text-purple-300',
+    },
+    {
+      value: TaskType.MENSUAL,
+      label: 'Mensual',
+      subtitle: 'Mismo día cada mes',
+      desc: 'Se repite el mismo día de cada mes automáticamente.',
+      icon: CalendarRange,
+      color: 'blue',
+      activeBorder: 'border-blue-500/40 bg-blue-500/10 text-blue-300',
+    },
+  ];
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
@@ -74,7 +133,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
           Crear y Asignar Tarea
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Al guardar la tarea, el sistema disparará automáticamente una notificación Push y un mensaje de WhatsApp al funcionario seleccionado.
+          Al guardar la tarea, el sistema disparará automáticamente una notificación Push y un mensaje de WhatsApp al usuario seleccionado.
         </p>
       </div>
 
@@ -92,7 +151,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-5">
+      <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
             Título de la Tarea *
@@ -151,7 +210,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Fecha de Asignación *</span>
+              <span>Fecha de Inicio / Asignación *</span>
             </label>
             <input
               type="date"
@@ -163,37 +222,42 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({ onTaskCreated })
           </div>
         </div>
 
+        {/* Modalidad de Tarea / Frecuencia de Recurrencia */}
         <div>
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Repeat className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Modalidad de Tarea</span>
+            <Repeat className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Frecuencia y Recurrencia de la Tarea *</span>
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setType(TaskType.COMUN)}
-              className={`p-3.5 rounded-xl border text-left transition-all ${
-                type === TaskType.COMUN
-                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <span className="block text-xs font-bold mb-0.5">Tarea Común</span>
-              <span className="block text-[11px] opacity-75">Se ejecuta una única vez en la fecha fijada.</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setType(TaskType.PERMANENTE)}
-              className={`p-3.5 rounded-xl border text-left transition-all ${
-                type === TaskType.PERMANENTE
-                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 shadow-sm'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <span className="block text-xs font-bold mb-0.5">Tarea Permanente</span>
-              <span className="block text-[11px] opacity-75">Se repite semanalmente y dispara recordatorios 24h antes.</span>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {taskTypeOptions.map((opt) => {
+              const Icon = opt.icon;
+              const isSelected = type === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setType(opt.value)}
+                  className={`p-3.5 rounded-xl border text-left transition-all relative ${
+                    isSelected
+                      ? opt.activeBorder + ' shadow-md'
+                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
+                      <Icon className="w-3.5 h-3.5" />
+                      {opt.label}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-medium bg-slate-900 border border-slate-800 text-slate-400">
+                      {opt.subtitle}
+                    </span>
+                  </div>
+                  <span className="block text-[11px] text-slate-400 leading-snug">
+                    {opt.desc}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

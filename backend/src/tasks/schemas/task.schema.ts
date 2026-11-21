@@ -5,7 +5,11 @@ export type TaskDocument = Task & Document;
 
 export enum TaskType {
   COMUN = 'comun',
-  PERMANENTE = 'permanente',
+  PERMANENTE = 'permanente', // Mantenido por retrocompatibilidad (actúa como semanal)
+  DIARIO = 'diario',
+  SEMANAL = 'semanal',
+  QUINCENAL = 'quincenal',
+  MENSUAL = 'mensual',
 }
 
 export enum TaskStatus {
@@ -46,7 +50,7 @@ export class Task {
   @Prop({ required: true, index: true })
   assignedDate: string; // Formato YYYY-MM-DD para búsquedas efímeras exactas
 
-  @Prop({ required: true, enum: TaskType, default: TaskType.COMUN })
+  @Prop({ required: true, enum: TaskType, default: TaskType.COMUN, index: true })
   type: TaskType;
 
   @Prop({ required: true, enum: TaskStatus, default: TaskStatus.PENDIENTE, index: true })
@@ -57,7 +61,14 @@ export class Task {
 
   @Prop({ type: [TaskHistoryItemSchema], default: [] })
   history: TaskHistoryItem[];
+
+  @Prop({ type: Types.ObjectId, ref: 'Task', default: null, index: true })
+  recurringParentId?: Types.ObjectId;
+
+  @Prop({ default: false, index: true })
+  isRecurringRoot?: boolean;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
 TaskSchema.index({ assignedTo: 1, assignedDate: 1 });
+TaskSchema.index({ recurringParentId: 1, assignedDate: 1 });

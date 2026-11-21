@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -75,5 +76,11 @@ export class TasksController {
   @Get(':id')
   async getById(@Param('id') id: string) {
     return this.tasksService.findById(id);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  async delete(@Param('id') id: string) {
+    return this.tasksService.deleteTask(id);
   }
 }

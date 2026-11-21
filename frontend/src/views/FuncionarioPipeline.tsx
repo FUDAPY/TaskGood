@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Task, TaskStatus } from '../types';
+import { Task, TaskStatus, TaskType } from '../types';
 import { apiFetch } from '../services/api';
 import { ZenBanner } from '../components/ZenBanner';
 import { JustificationModal } from '../components/JustificationModal';
@@ -13,6 +13,47 @@ import {
   RefreshCw,
   Repeat,
 } from 'lucide-react';
+
+const renderTaskTypeBadge = (type: TaskType | string) => {
+  switch (type) {
+    case TaskType.DIARIO:
+    case 'diario':
+      return (
+        <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md font-medium">
+          <Repeat className="w-3 h-3" />
+          Diario
+        </span>
+      );
+    case TaskType.SEMANAL:
+    case 'semanal':
+    case TaskType.PERMANENTE:
+    case 'permanente':
+      return (
+        <span className="flex items-center gap-1 text-[10px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md font-medium">
+          <Repeat className="w-3 h-3" />
+          Semanal
+        </span>
+      );
+    case TaskType.QUINCENAL:
+    case 'quincenal':
+      return (
+        <span className="flex items-center gap-1 text-[10px] text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md font-medium">
+          <Repeat className="w-3 h-3" />
+          Quincenal
+        </span>
+      );
+    case TaskType.MENSUAL:
+    case 'mensual':
+      return (
+        <span className="flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md font-medium">
+          <Repeat className="w-3 h-3" />
+          Mensual
+        </span>
+      );
+    default:
+      return null;
+  }
+};
 
 const STATUS_COLUMNS = [
   { id: TaskStatus.PENDIENTE, label: 'Pendiente', color: 'border-amber-500/40 text-amber-400 bg-amber-500/10' },
@@ -158,12 +199,7 @@ export const FuncionarioPipeline: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-bold text-slate-100 text-sm">{task.title}</h3>
-                    {task.type === 'permanente' && (
-                      <span className="flex items-center gap-1 text-[10px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md font-medium">
-                        <Repeat className="w-3 h-3" />
-                        Semanal
-                      </span>
-                    )}
+                    {renderTaskTypeBadge(task.type)}
                   </div>
                   <p className="text-xs text-slate-400 mb-4 leading-relaxed">
                     {task.description || 'Sin descripción detallada.'}
@@ -230,11 +266,7 @@ export const FuncionarioPipeline: React.FC = () => {
                           <h4 className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
                             {task.title}
                           </h4>
-                          {task.type === 'permanente' && (
-                            <span title="Tarea Permanente (Semanal)" className="text-cyan-400 shrink-0">
-                              <Repeat className="w-3.5 h-3.5" />
-                            </span>
-                          )}
+                          {renderTaskTypeBadge(task.type)}
                         </div>
 
                         <p className="text-[11px] text-slate-400 line-clamp-3 mb-3 leading-relaxed">
