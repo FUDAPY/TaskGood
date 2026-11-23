@@ -93,10 +93,9 @@ El proyecto está diseñado para desplegarse en Dokploy directamente desde el re
    MONGO_URI=mongodb://catella:080105g@task-back-khnme5:27017/?authSource=admin&directConnection=true
    ```
 4. Configure el puerto del contenedor en **3000**.
-5. *(Recomendado)* Añada un volumen persistente para resguardar las credenciales de WhatsApp:
-   ```
-   /app/backend/.wwebjs_auth
-   ```
+5. **(Crítico para persistencia de WhatsApp)** Añada un volumen persistente en Dokploy para resguardar la sesión:
+   - **Mount Path:** `/app/data/whatsapp-auth`
+   - Esto garantiza que al reiniciar el contenedor, actualizar variables o desplegar nuevas versiones en Dokploy, la sesión de WhatsApp vinculada permanezca activa sin requerir nuevo código de emparejamiento.
 6. Haga clic en **Deploy**. Dokploy compilará el frontend en Vite, compilará la API NestJS, configurará el navegador Chromium para WhatsApp y levantará la aplicación lista para producción.
 
 ---

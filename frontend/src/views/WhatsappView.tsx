@@ -93,14 +93,19 @@ export const WhatsappView: React.FC = () => {
   };
 
   const handleDisconnect = async () => {
-    if (!confirm('¿Desea desconectar la sesión activa de WhatsApp?')) return;
+    if (
+      !confirm(
+        '¿Está seguro de que desea DESVINCULAR WhatsApp? Esto cerrará la sesión de WhatsApp en el servidor y requerirá vincular el teléfono nuevamente con código QR o Pairing Code.',
+      )
+    )
+      return;
     try {
       setIsLoading(true);
       await apiFetch('/whatsapp/disconnect', { method: 'POST' });
       await fetchStatus();
-      setFeedback('Sesión de WhatsApp desconectada.');
+      setFeedback('WhatsApp ha sido desvinculado exitosamente.');
     } catch (err: any) {
-      setFeedback(err?.message || 'Error al desconectar.');
+      setFeedback(err?.message || 'Error al desvincular.');
     } finally {
       setIsLoading(false);
     }
@@ -192,9 +197,10 @@ export const WhatsappView: React.FC = () => {
                 onClick={handleDisconnect}
                 disabled={isLoading}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/25 text-xs font-bold transition-colors"
+                title="Desvincular WhatsApp"
               >
                 <PowerOff className="w-3.5 h-3.5" />
-                <span>Desconectar</span>
+                <span>Desvincular WhatsApp</span>
               </button>
             )}
           </div>

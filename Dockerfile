@@ -49,6 +49,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV WHATSAPP_AUTH_DIR=/app/data/whatsapp-auth
 
 # Copiar artefactos compilados del frontend
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
@@ -60,8 +61,11 @@ COPY --from=backend-builder /app/backend/package.json /app/backend/package.json
 
 WORKDIR /app/backend
 
-# Crear directorio persistente para credenciales de WhatsApp
-RUN mkdir -p /app/backend/.wwebjs_auth /app/backend/.wwebjs_cache
+# Crear directorios para datos persistentes de WhatsApp y caché
+RUN mkdir -p /app/data/whatsapp-auth /app/backend/.wwebjs_cache
+
+# Declarar volumen persistente para resguardar la sesión de WhatsApp en Dokploy
+VOLUME ["/app/data/whatsapp-auth"]
 
 EXPOSE 3000
 

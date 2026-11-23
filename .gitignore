@@ -6,6 +6,8 @@ build/
 !.env.example
 .wwebjs_auth/
 .wwebjs_cache/
+whatsapp-auth/
+data/
 coverage/
 *.log
 .DS_Store

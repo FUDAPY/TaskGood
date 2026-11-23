@@ -26,17 +26,59 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private lastError: string | null = null;
   private isManualLogout = false;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectAttempts = 0;
   private onPairingCodeCallback: ((code: string) => void) | null = null;
   private onStatusChangeCallback: ((status: WhatsAppStatus) => void) | null = null;
 
   constructor() {}
 
+  /**
+   * Obtiene y asegura la existencia del directorio persistente de credenciales de WhatsApp
+   */
+  private getAuthDir(): string {
+    const authDir =
+      process.env.WHATSAPP_AUTH_DIR ||
+      (fs.existsSync('/app')
+        ? '/app/data/whatsapp-auth'
+        : path.resolve('./.wwebjs_auth'));
+
+    try {
+      if (!fs.existsSync(authDir)) {
+        fs.mkdirSync(authDir, { recursive: true });
+      }
+    } catch (e: any) {
+      this.logger.warn(`No se pudo asegurar directorio ${authDir}: ${e?.message}`);
+    }
+    return authDir;
+  }
+
   async onModuleInit() {
-    // Al inicializar el backend, restaurar sesión previa si existe autenticación persistente
-    const sessionDir = path.resolve('./.wwebjs_auth/session');
+    // Al inicializar el backend, restaurar sesión previa si existen credenciales persistentes
+    const authDir = this.getAuthDir();
+    const sessionDir = path.join(authDir, 'session');
     if (fs.existsSync(sessionDir)) {
-      this.logger.log('Sesión previa de WhatsApp detectada. Restaurando cliente en segundo plano...');
-      this.autoRestoreSession();
+      try {
+        const files = fs.readdirSync(sessionDir);
+        if (files.length > 0) {
+          this.logger.log(`Sesión persistente de WhatsApp detectada en ${sessionDir}. Reconectando automáticamente en segundo plano...`);
+          this.autoRestoreSession();
+          return;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Error al inspeccionar directorio de sesión ${sessionDir}:`, err?.message);
+      }
+    }
+
+    // Compatibilidad: verificar si existía sesión previa en la ruta legacy ./.wwebjs_auth/session
+    const legacySessionDir = path.resolve('./.wwebjs_auth/session');
+    if (authDir !== path.resolve('./.wwebjs_auth') && fs.existsSync(legacySessionDir)) {
+      try {
+        const files = fs.readdirSync(legacySessionDir);
+        if (files.length > 0) {
+          this.logger.log(`Sesión previa en ruta legacy detectada (${legacySessionDir}). Reconectando...`);
+          this.autoRestoreSession();
+        }
+      } catch {}
     }
   }
 
@@ -73,7 +115,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
    * Remueve bloqueos residuales de Chromium (SingletonLock) que impiden el arranque en contenedores
    */
   private cleanSingletonLocks() {
-    const authPath = path.resolve('./.wwebjs_auth');
+    const authPath = this.getAuthDir();
     if (!fs.existsSync(authPath)) return;
 
     const removeLocksRecursively = (dir: string) => {
@@ -121,7 +163,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
     const clientOptions: any = {
       authStrategy: new LocalAuth({
-        dataPath: './.wwebjs_auth',
+        dataPath: this.getAuthDir(),
       }),
       authTimeoutMs: 120000,
       takeoverOnConflict: true,
@@ -203,6 +245,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.pairingCode = null;
       this.qrCode = null;
       this.lastError = null;
+      this.reconnectAttempts = 0;
       try {
         const widUser = (this.client as any)?.info?.wid?.user;
         if (widUser) {
@@ -214,6 +257,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
     this.client.on('authenticated', () => {
       this.logger.log('Cliente WhatsApp autenticado.');
+      this.reconnectAttempts = 0;
     });
 
     this.client.on('auth_failure', (msg) => {
@@ -232,12 +276,19 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.qrCode = null;
       this.notifyStatus();
 
-      // Reconexión automática si no fue desconexión manual del usuario
-      if (!this.isManualLogout && reason !== 'LOGOUT') {
-        this.logger.log('Programando reconexión automática de WhatsApp en 15 segundos...');
+      // Reconexión automática con backoff exponencial si no fue cierre explícito
+      if (this.isManualLogout || reason === 'LOGOUT') {
+        this.logger.log('Sesión revocada o desvinculada manualmente. Limpiando credenciales locales...');
+        this.clearSessionAuth();
+      } else {
+        this.reconnectAttempts++;
+        const delay = Math.min(3000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+        this.logger.log(
+          `Desconexión transitoria (${reason}). Programando reconexión automática en ${delay / 1000}s (intento ${this.reconnectAttempts})...`,
+        );
         this.reconnectTimer = setTimeout(() => {
           this.autoRestoreSession();
-        }, 15000);
+        }, delay);
       }
     });
 
@@ -246,6 +297,16 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.lastError = err?.message || 'Error al iniciar Puppeteer';
       this.isConnecting = false;
       this.notifyStatus();
+
+      // Reconexión con backoff si falló en modo segundo plano (autoRestore)
+      if (!this.isManualLogout && !this.isConnected && !pairPhoneNumber) {
+        this.reconnectAttempts++;
+        const delay = Math.min(3000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+        this.logger.log(`Reintentando inicialización de WhatsApp en ${delay / 1000}s (intento ${this.reconnectAttempts})...`);
+        this.reconnectTimer = setTimeout(() => {
+          this.autoRestoreSession();
+        }, delay);
+      }
     });
   }
 
@@ -270,6 +331,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.isManualLogout = false;
+    this.reconnectAttempts = 0;
     this.activePhoneNumber = cleanedNumber;
     this.isConnecting = true;
     this.isConnected = false;
@@ -362,20 +424,22 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.destroyClient(true);
-
-    // Limpiar directorio de credenciales para desvinculación total
-    const authPath = path.resolve('./.wwebjs_auth');
-    if (fs.existsSync(authPath)) {
-      try {
-        fs.rmSync(authPath, { recursive: true, force: true });
-        this.logger.log('Sesión persistente de WhatsApp removida exitosamente.');
-      } catch (e) {
-        this.logger.warn('No se pudo eliminar el directorio de sesión:', e);
-      }
-    }
+    this.clearSessionAuth();
 
     this.activePhoneNumber = null;
     this.notifyStatus();
+  }
+
+  private clearSessionAuth() {
+    const authPath = this.getAuthDir();
+    if (fs.existsSync(authPath)) {
+      try {
+        fs.rmSync(authPath, { recursive: true, force: true });
+        this.logger.log(`Directorio de sesión persistente de WhatsApp eliminado: ${authPath}`);
+      } catch (e) {
+        this.logger.warn(`No se pudo eliminar el directorio de sesión ${authPath}:`, e);
+      }
+    }
   }
 
   async destroyClient(isLogout = false): Promise<void> {
