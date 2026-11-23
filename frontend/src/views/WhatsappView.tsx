@@ -79,11 +79,18 @@ export const WhatsappView: React.FC = () => {
     try {
       setIsLoading(true);
       setFeedback(null);
+      setStatus((prev) => ({
+        ...prev,
+        isConnecting: true,
+        pairingCode: null,
+        qrCode: null,
+        lastError: null,
+      }));
       await apiFetch('/whatsapp/pair', {
         method: 'POST',
         body: JSON.stringify({ phoneNumber: phoneNumber.trim() }),
       });
-      setFeedback('Solicitud enviada. Generando código de emparejamiento de 8 dígitos...');
+      setFeedback('Solicitud procesada por el servidor. Generando código de 8 dígitos y código QR...');
       await fetchStatus();
     } catch (err: any) {
       setFeedback(err?.message || 'Error al iniciar emparejamiento.');

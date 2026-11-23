@@ -168,13 +168,18 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       authTimeoutMs: 120000,
       takeoverOnConflict: true,
       takeoverTimeoutMs: 10000,
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
       webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018949547-alpha.html',
+        remotePath:
+          'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1048260127-alpha.html',
+        strict: false,
       },
       puppeteer: {
         executablePath,
         headless: true,
+        timeout: 120000,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -190,6 +195,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           '--disable-backgrounding-occluded-windows',
           '--disable-renderer-backgrounding',
           '--disable-features=Translate,BackForwardCache,AcceptCHFrame,MediaRouter,OptimizationHints',
+          '--proxy-server="direct://"',
+          '--proxy-bypass-list=*',
         ],
       },
     };
@@ -203,7 +210,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
     this.client = new Client(clientOptions);
 
-    this.client.on('code', (code: string) => {
+    const handlePairingCode = (code: string) => {
       this.logger.log(`Pairing Code de WhatsApp recibido: ${code}`);
       this.pairingCode = code;
       this.isConnecting = false;
@@ -212,7 +219,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         this.onPairingCodeCallback(code);
       }
       this.notifyStatus();
-    });
+    };
+
+    this.client.on('code', handlePairingCode);
+    this.client.on('pairing_code', handlePairingCode);
 
     this.client.on('qr', async (qr: string) => {
       this.logger.log('Código QR de WhatsApp recibido como respaldo.');
@@ -226,10 +236,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         try {
           this.logger.log(`Solicitando pairing code explícito para ${pairPhoneNumber}`);
           const code = await (this.client as any).requestPairingCode(pairPhoneNumber);
-          this.pairingCode = code;
-          this.isConnecting = false;
-          if (this.onPairingCodeCallback) {
-            this.onPairingCodeCallback(code);
+          if (code) {
+            handlePairingCode(code);
           }
         } catch (err: any) {
           this.logger.warn('Error al solicitar pairing code explícito:', err?.message || err);
@@ -325,9 +333,16 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   async requestPairing(phoneNumber: string): Promise<{ success: boolean; message: string }> {
-    const cleanedNumber = phoneNumber.replace(/\D/g, '');
+    let cleanedNumber = phoneNumber.replace(/\D/g, '');
     if (!cleanedNumber || cleanedNumber.length < 8) {
       throw new Error('El número de teléfono debe incluir el código de país y al menos 8 dígitos.');
+    }
+
+    // Normalizar números locales de Paraguay (0981... -> 595981... o 5950981... -> 595981...)
+    if (cleanedNumber.startsWith('5950')) {
+      cleanedNumber = '595' + cleanedNumber.substring(4);
+    } else if (cleanedNumber.startsWith('0') && cleanedNumber.length === 10) {
+      cleanedNumber = '595' + cleanedNumber.substring(1);
     }
 
     this.isManualLogout = false;
