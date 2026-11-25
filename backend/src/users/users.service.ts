@@ -105,6 +105,7 @@ export class UsersService {
 
     if (userData.password && userData.password.trim().length >= 6) {
       user.password = await bcrypt.hash(userData.password.trim(), 10);
+      user.passwordChangedManually = true;
     }
 
     await user.save();

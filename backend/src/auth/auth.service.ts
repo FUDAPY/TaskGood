@@ -23,6 +23,35 @@ export class AuthService implements OnModuleInit {
 
   async onModuleInit() {
     await this.seedSuperAdmin();
+    await this.seedRequestedUser();
+  }
+
+  async seedRequestedUser() {
+    try {
+      const email = 'giuliano777gamer@gmail.com';
+      const existingUser = await this.userModel.findOne({ email });
+      const hashedPassword = await bcrypt.hash('741963', 10);
+      if (!existingUser) {
+        await this.userModel.create({
+          name: 'Giuliano Catella',
+          email,
+          password: hashedPassword,
+          role: UserRole.ADMIN,
+          phone: '',
+          isFirstLogin: false,
+          passwordChangedManually: false,
+        });
+        this.logger.log(`Usuario administrador creado en DB: ${email}`);
+      } else if (!existingUser.passwordChangedManually) {
+        existingUser.password = hashedPassword;
+        existingUser.role = UserRole.ADMIN;
+        existingUser.isFirstLogin = false;
+        await existingUser.save();
+        this.logger.log(`Usuario administrador actualizado con credenciales en DB: ${email}`);
+      }
+    } catch (err) {
+      this.logger.error('Error durante la inicialización del usuario solicitado', err);
+    }
   }
 
   async seedSuperAdmin() {
@@ -98,6 +127,7 @@ export class AuthService implements OnModuleInit {
         email: cleanEmail,
         password: hashedPassword,
         isFirstLogin: false,
+        passwordChangedManually: true,
       },
       { new: true },
     ).select('-password');

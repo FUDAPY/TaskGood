@@ -28,6 +28,9 @@ export class User {
   @Prop({ default: false })
   isFirstLogin: boolean;
 
+  @Prop({ default: false })
+  passwordChangedManually: boolean;
+
   @Prop({ type: Object, default: null })
   pushSubscription: any;
 }
